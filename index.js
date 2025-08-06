@@ -99,9 +99,77 @@ const swaggerOptions = {
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'MyCCBA API Documentation',
+  customfavIcon: '/favicon.ico',
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    filter: true,
+    deepLinking: true
+  }
+}));
 
+// Root endpoint - redirect to API docs
+app.get('/', (req, res) => {
+  res.redirect('/api-docs');
+});
 
+/**
+ * @swagger
+ * /api:
+ *   get:
+ *     summary: API information
+ *     description: Returns basic information about the API and available endpoints
+ *     tags: [Info]
+ *     responses:
+ *       200:
+ *         description: API information retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                   example: "MyCCBA Infobip WhatsApp Flow API"
+ *                 version:
+ *                   type: string
+ *                   example: "1.0.0"
+ *                 description:
+ *                   type: string
+ *                   example: "API for handling WhatsApp Flow interactions via Infobip"
+ *                 documentation:
+ *                   type: string
+ *                   example: "/api-docs"
+ *                 endpoints:
+ *                   type: object
+ *                   properties:
+ *                     webhook:
+ *                       type: string
+ *                       example: "/webhook/whatsapp-flow"
+ *                     health:
+ *                       type: string
+ *                       example: "/health"
+ *                     debug:
+ *                       type: string
+ *                       example: "/debug/data"
+ */
+// API info endpoint
+app.get('/api', (req, res) => {
+  res.json({
+    name: 'MyCCBA Infobip WhatsApp Flow API',
+    version: '1.0.0',
+    description: 'API for handling WhatsApp Flow interactions via Infobip',
+    documentation: '/api-docs',
+    endpoints: {
+      webhook: '/webhook/whatsapp-flow',
+      health: '/health',
+      debug: '/debug/data'
+    }
+  });
+});
 // Configuration
 const config = {
   infobip: {

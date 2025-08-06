@@ -62,6 +62,8 @@ The documentation includes:
 
 ## API Endpoints
 
+- `GET /` - Redirects to API documentation
+- `GET /api` - API information and endpoint list
 - `POST /webhook/whatsapp-flow` - Main webhook endpoint for WhatsApp Flow
 - `GET /health` - Health check endpoint
 - `GET /debug/data` - Debug endpoint to view dummy data
