@@ -51,14 +51,18 @@ The server will start on `http://localhost:3000`
 
 The application includes comprehensive API documentation using Swagger/OpenAPI 3.0. You can access the interactive documentation at:
 
-- **Local Development**: `http://localhost:3000/api-docs`
-- **Production**: `https://your-app-name.vercel.app/api-docs`
+- **Local Development**: `http://localhost:3000/docs`
+- **Production**: `https://your-app-name.vercel.app/docs`
 
 The documentation includes:
 - Detailed request/response schemas
 - Example requests and responses
 - Interactive testing interface
 - All available endpoints with descriptions
+
+**Alternative endpoints:**
+- `/api-docs` - Standard Swagger UI (may have issues on Vercel)
+- `/swagger.json` - Raw OpenAPI specification
 
 ## API Endpoints
 
@@ -67,7 +71,9 @@ The documentation includes:
 - `POST /webhook/whatsapp-flow` - Main webhook endpoint for WhatsApp Flow
 - `GET /health` - Health check endpoint
 - `GET /debug/data` - Debug endpoint to view dummy data
-- `GET /api-docs` - Interactive API documentation (Swagger UI)
+- `GET /docs` - Interactive API documentation (Swagger UI) - **Recommended**
+- `GET /api-docs` - Alternative Swagger UI (may have issues on Vercel)
+- `GET /swagger.json` - Raw OpenAPI specification
 
 ## Deployment to Vercel
 

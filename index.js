@@ -99,21 +99,36 @@ const swaggerOptions = {
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+
+// Serve Swagger JSON specification
+app.get('/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
+// Serve custom Swagger UI HTML
+app.get('/docs', (req, res) => {
+  res.sendFile(__dirname + '/swagger.html');
+});
+
+// Serve Swagger UI with custom configuration (fallback)
+app.use('/api-docs', swaggerUi.serve);
+app.get('/api-docs', swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'MyCCBA API Documentation',
-  customfavIcon: '/favicon.ico',
   swaggerOptions: {
     persistAuthorization: true,
     displayRequestDuration: true,
     filter: true,
-    deepLinking: true
-  }
+    deepLinking: true,
+    tryItOutEnabled: true
+  },
+  explorer: true
 }));
 
 // Root endpoint - redirect to API docs
 app.get('/', (req, res) => {
-  res.redirect('/api-docs');
+  res.redirect('/docs');
 });
 
 /**
@@ -162,7 +177,7 @@ app.get('/api', (req, res) => {
     name: 'MyCCBA Infobip WhatsApp Flow API',
     version: '1.0.0',
     description: 'API for handling WhatsApp Flow interactions via Infobip',
-    documentation: '/api-docs',
+    documentation: '/docs',
     endpoints: {
       webhook: '/webhook/whatsapp-flow',
       health: '/health',
