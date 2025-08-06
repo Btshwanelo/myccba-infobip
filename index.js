@@ -1,10 +1,105 @@
 const express = require('express');
 const axios = require('axios');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
 const app = express();
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Swagger configuration
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'MyCCBA Infobip WhatsApp Flow API',
+      version: '1.0.0',
+      description: 'API documentation for MyCCBA WhatsApp Flow webhook server',
+      contact: {
+        name: 'MyCCBA Team',
+        email: 'support@myccba.com'
+      }
+    },
+    servers: [
+      {
+        url: process.env.NODE_ENV === 'production' 
+          ? 'https://your-app-name.vercel.app' 
+          : 'http://localhost:3000',
+        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server'
+      }
+    ],
+    components: {
+      schemas: {
+        WebhookRequest: {
+          type: 'object',
+          properties: {
+            action: {
+              type: 'string',
+              enum: ['INIT', 'data_exchange'],
+              description: 'The action type for the webhook'
+            },
+            data: {
+              type: 'object',
+              description: 'Data payload for the webhook'
+            },
+            flow_token: {
+              type: 'string',
+              description: 'Flow token for the WhatsApp flow'
+            }
+          },
+          required: ['action', 'data']
+        },
+        WebhookResponse: {
+          type: 'object',
+          properties: {
+            screen: {
+              type: 'string',
+              description: 'Screen to display in WhatsApp flow'
+            },
+            data: {
+              type: 'object',
+              description: 'Response data for the flow'
+            },
+            error: {
+              type: 'string',
+              description: 'Error message if any'
+            }
+          }
+        },
+        HealthResponse: {
+          type: 'object',
+          properties: {
+            status: {
+              type: 'string',
+              example: 'ok'
+            },
+            timestamp: {
+              type: 'string',
+              format: 'date-time'
+            },
+            customers: {
+              type: 'number',
+              description: 'Number of customers in database'
+            },
+            products: {
+              type: 'number',
+              description: 'Number of products in database'
+            },
+            orders: {
+              type: 'number',
+              description: 'Number of orders in database'
+            }
+          }
+        }
+      }
+    }
+  },
+  apis: ['./index.js']
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 
 // Configuration
@@ -248,6 +343,81 @@ function formatCartItemsText(cartItems) {
   }).filter(item => item).join('\n');
 }
 
+/**
+ * @swagger
+ * /webhook/whatsapp-flow:
+ *   post:
+ *     summary: Main webhook endpoint for WhatsApp Flow
+ *     description: Handles WhatsApp Flow interactions including initialization and data exchange
+ *     tags: [Webhook]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/WebhookRequest'
+ *           examples:
+ *             init_example:
+ *               summary: Flow initialization
+ *               value:
+ *                 action: "INIT"
+ *                 data:
+ *                   phone_number: "+27123456789"
+ *                   from: "+27123456789"
+ *             data_exchange_example:
+ *               summary: Data exchange
+ *               value:
+ *                 action: "data_exchange"
+ *                 data:
+ *                   action: "load_sports_products"
+ *                   session_id: "sess_1234567890_abc123"
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/WebhookResponse'
+ *             examples:
+ *               welcome_response:
+ *                 summary: Welcome screen response
+ *                 value:
+ *                   screen: "WELCOME"
+ *                   data:
+ *                     customer_name: "Siyaya Trading"
+ *                     responsible_entity: "Drinks & More Pty Ltd"
+ *                     customer_id: "CUST001"
+ *                     session_id: "sess_1234567890_abc123"
+ *                     account_balance: "2500.00"
+ *                     credit_limit: "50000.00"
+ *                     available_credit: "47500.00"
+ *               products_response:
+ *                 summary: Products screen response
+ *                 value:
+ *                   screen: "SPORTS_PRODUCTS"
+ *                   data:
+ *                     products:
+ *                       - id: "powerade_mountb_500"
+ *                         title: "Powerade Mountain Berry 500ML"
+ *                         price: "18.50"
+ *                         image_src: "https://images.unsplash.com/photo-1594971475674-6a97f8fe8c8b?w=300&h=300&fit=crop"
+ *                         available: true
+ *                         stock: 150
+ *                     cart_count: 0
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Internal server error"
+ *                 details:
+ *                   type: string
+ *                   example: "Error details"
+ */
 // Main webhook endpoint
 app.post('/webhook/whatsapp-flow', async (req, res) => {
   try {
@@ -762,6 +932,27 @@ function generateCustomerId() {
   return 'CUST' + String(dummyDatabase.customers.length + 1).padStart(3, '0');
 }
 
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Health check endpoint
+ *     description: Returns the health status of the application and basic statistics
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Application is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthResponse'
+ *             example:
+ *               status: "ok"
+ *               timestamp: "2024-12-01T10:30:00.000Z"
+ *               customers: 3
+ *               products: 8
+ *               orders: 3
+ */
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
@@ -773,6 +964,65 @@ app.get('/health', (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /debug/data:
+ *   get:
+ *     summary: Debug endpoint to view dummy data
+ *     description: Returns debug information about the dummy database including sample data
+ *     tags: [Debug]
+ *     responses:
+ *       200:
+ *         description: Debug data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 customers:
+ *                   type: number
+ *                   description: Number of customers in database
+ *                 products:
+ *                   type: number
+ *                   description: Number of products in database
+ *                 orders:
+ *                   type: number
+ *                   description: Number of orders in database
+ *                 active_carts:
+ *                   type: number
+ *                   description: Number of active shopping carts
+ *                 sample_customer:
+ *                   type: object
+ *                   description: Sample customer data
+ *                 sample_products:
+ *                   type: array
+ *                   description: Sample product data
+ *             example:
+ *               customers: 3
+ *               products: 8
+ *               orders: 3
+ *               active_carts: 0
+ *               sample_customer:
+ *                 id: "CUST001"
+ *                 phone: "+27123456789"
+ *                 name: "Siyaya Trading"
+ *                 responsible: "Drinks & More Pty Ltd"
+ *                 accountBalance: 2500.00
+ *                 creditLimit: 50000.00
+ *               sample_products:
+ *                 - id: "powerade_mountb_500"
+ *                   name: "Powerade Mountain Berry 500ML"
+ *                   category: "sports"
+ *                   price: 18.50
+ *                 - id: "coke_500"
+ *                   name: "Coca-Cola 500ML"
+ *                   category: "soft_drinks"
+ *                   price: 15.00
+ *                 - id: "monster_500"
+ *                   name: "Monster Energy 500ML"
+ *                   category: "energy"
+ *                   price: 25.00
+ */
 // Debug endpoint to view dummy data
 app.get('/debug/data', (req, res) => {
   res.json({
